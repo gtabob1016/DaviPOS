@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08080c">
+<meta name="robots" content="noindex">
+<title>Davi POS</title>
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root {
+    --bg: #08080c; --panel: #121218; --panel-hi: #1b1b26; --line: #2c2c3c;
+    --text: #f5f5fa; --sub: #9c9cb0; --pink: #ff2e97; --pink-text: #ff7abf; --pink-solid: #ec2a8b;
+    --magenta: #d946ef; --purple: #9d5cff; --purple-text: #c9abff; --error: #ff4d6a; --ok: #3ddc84; --warn: #ffc470;
+    --neon: linear-gradient(90deg, var(--pink), var(--magenta) 50%, var(--purple));
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); }
+  body { font-family: "Yu Gothic UI", "Meiryo UI", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; font-size: 14px; line-height: 1.4; overscroll-behavior: none; }
+  button, input, select { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+
+  .app { display: flex; flex-direction: column; height: 100dvh; max-width: 1040px; margin: 0 auto; }
+
+  /* ===== ヘッダー（BAR -DAVI- 9047） ===== */
+  .top { display: flex; align-items: center; gap: 10px; padding: 8px 12px 6px; flex: none; }
+  .brand b { display: block; color: var(--pink); font-size: 15px; line-height: 1.2; }
+  .brand span { color: var(--sub); font-size: 10px; }
+  .logo { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .logo i { flex: 1; height: 2px; border-radius: 2px; }
+  .logo i:first-child { background: linear-gradient(90deg, var(--pink), var(--magenta)); box-shadow: 0 0 10px var(--pink); }
+  .logo i:last-child { background: linear-gradient(90deg, var(--magenta), var(--purple)); box-shadow: 0 0 10px var(--purple); }
+  .logo div { text-align: center; line-height: 1; }
+  .logo small { display: block; font-size: 9px; }
+  .logo small:first-child { color: var(--pink-text); } .logo small:last-child { color: var(--purple-text); }
+  .logo strong { display: block; font-size: 23px; font-weight: 300; background: var(--neon); -webkit-background-clip: text; background-clip: text; color: transparent;
+                 filter: drop-shadow(0 0 7px rgba(217, 70, 239, .8)); }
+  .neonline { height: 2px; border-radius: 2px; margin: 2px 14px 8px; background: var(--neon); box-shadow: 0 0 12px rgba(217, 70, 239, .85); flex: none; }
+
+  /* ===== ボタン ===== */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 30px; padding: 0 12px; border-radius: 6px; cursor: pointer;
+         background: var(--panel-hi); border: 1px solid var(--line); color: var(--text); font-weight: 600; font-size: 13px; white-space: nowrap; user-select: none;
+         transition: box-shadow .12s, filter .12s; }
+  .btn:hover:not(:disabled) { filter: brightness(1.18); box-shadow: 0 0 10px var(--glow, transparent); }
+  .btn:active:not(:disabled) { filter: brightness(1.4); }
+  .btn:disabled { opacity: .38; cursor: default; }
+  .btn.p1 { background: #1c0f18; border-color: var(--pink); color: var(--pink-text); --glow: var(--pink); }
+  .btn.p10 { background: #150f22; border-color: var(--purple); color: var(--purple-text); --glow: var(--purple); }
+  .btn.max { background: #7a1650; border-color: var(--pink); color: #fff; --glow: var(--pink); }
+  .btn.solid { background: var(--pink-solid); border-color: #ff5cab; color: #fff; --glow: var(--pink); }
+  .btn.sel { background: var(--pink-solid); border-color: #ff5cab; color: #fff; }
+  .btn.danger { color: var(--error); }
+  .btn.big { min-height: 40px; }
+  .btn.sq { width: 34px; min-height: 34px; padding: 0; font-size: 16px; }
+
+  input[type=text], input[type=search], input[type=password], input[type=date], input[type=tel], select {
+    width: 100%; height: 34px; padding: 0 10px; border-radius: 6px; background: #0d0d13; border: 1px solid var(--line); outline: none; }
+  input:focus, select:focus { border-color: var(--pink); }
+  input.err, select.err { border-color: var(--error); }
+
+  .offline { margin: 0 12px 6px; padding: 5px 10px; border-radius: 6px; background: #2a1d10; border: 1px solid #8a5a20; color: var(--warn); font-size: 12px;
+             display: flex; align-items: center; gap: 8px; flex: none; }
+  .offline span { flex: 1; }
+
+  /* ===== 注文画面 ===== */
+  .screen { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 12px 4px; }
+  .toolbar { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; flex: none; }
+  .cats { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+  .cats .btn { min-height: 32px; min-width: 64px; }
+  .search { width: 210px; flex: none; position: relative; }
+  .cols { flex: 1; min-height: 0; display: flex; gap: 10px; }
+  .list { flex: 1; min-width: 0; overflow-y: auto; padding-right: 2px; }
+  .empty { color: var(--sub); text-align: center; padding: 40px 0; }
+
+  .prow { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 4px 5px 4px 10px; margin-bottom: 4px; border-radius: 6px;
+          background: var(--panel); border: 1px solid transparent; }
+  .prow:hover { background: var(--panel-hi); border-color: #4a2a4a; }
+  .pname { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; }
+  .pname b { font-weight: 400; font-size: 13.5px; margin-right: 2px; }
+  .badge { padding: 0 6px; border-radius: 8px; font-size: 10px; background: #3a1230; border: 1px solid #b03a80; color: var(--pink-text); }
+  .chip { padding: 0 5px 1px; border-radius: 3px; font-size: 10.5px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .pprice { white-space: nowrap; }
+  .plimit { width: 50px; text-align: right; color: var(--sub); font-size: 11.5px; white-space: nowrap; }
+  .pbtns { display: flex; gap: 4px; }
+  .pbtns .btn { width: 42px; padding: 0; min-height: 28px; }
+  .pbtns .btn.max { width: 46px; }
+
+  .order { width: 300px; flex: none; display: flex; flex-direction: column; padding: 10px 12px 12px; border-radius: 10px; background: #0e0e15;
+           border: 1px solid transparent; background-image: linear-gradient(#0e0e15, #0e0e15), var(--neon); background-origin: border-box; background-clip: padding-box, border-box;
+           box-shadow: 0 0 14px rgba(217, 70, 239, .35); }
+  .order h2 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; }
+  .order h2 span { flex: 1; }
+  .lines { flex: 1; min-height: 60px; overflow-y: auto; }
+  .lines .empty { padding: 30px 0; line-height: 1.6; }
+  .oline { padding: 5px 0 7px; border-bottom: 1px solid var(--line); }
+  .oline .n { display: flex; align-items: center; font-size: 13.5px; }
+  .oline .n span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .oline .x { background: none; border: 0; color: var(--pink-text); cursor: pointer; font-size: 15px; padding: 2px 6px; }
+  .oline .q { display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+  .oline .q small { color: var(--sub); font-size: 11.5px; margin-right: 6px; }
+  .oline .q .btn { min-height: 26px; padding: 0; width: 26px; font-size: 15px; }
+  .oline .q .btn.num { width: 46px; color: #fff; font-size: 14px; }
+  .oline .q b { flex: 1; text-align: right; font-size: 13.5px; }
+
+  .total { position: relative; margin: 8px 0; padding: 6px 8px; border-radius: 8px; background: #14101a; border: 1px solid #5a2a55; text-align: center; cursor: pointer; width: 100%; }
+  .total:disabled { opacity: .4; cursor: default; }
+  .total small { display: block; color: var(--pink-text); font-size: 11.5px; }
+  .total strong { display: block; font-size: 30px; line-height: 1.25; color: var(--pink); text-shadow: 0 0 14px rgba(255, 46, 151, .85); white-space: nowrap; }
+  .total em { display: block; font-style: normal; color: var(--sub); font-size: 10.5px; }
+  .total.flash { animation: flash .6s; }
+  @keyframes flash { 10% { background: rgba(255, 46, 151, .55); box-shadow: 0 0 22px var(--pink); } }
+  .acts { display: flex; gap: 6px; }
+  .acts .btn { flex: 1; min-height: 50px; padding: 0 2px; font-size: 11.5px; flex-direction: column; gap: 2px; }
+  .acts .btn i { font-style: normal; font-size: 15px; line-height: 1; }
+
+  .mbar { display: none; }
+
+  /* ===== メニュー管理 ===== */
+  .ahead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex: none; }
+  .ahead h2 { flex: 1; margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .ahead h2::before { content: ""; width: 4px; height: 18px; border-radius: 2px; background: var(--pink); }
+  .hint { color: var(--sub); font-size: 10.5px; margin: -4px 0 6px 2px; flex: none; }
+  .savebar { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; padding: 6px 6px 6px 12px; border-radius: 6px; background: #2a1026; border: 1px solid var(--pink); flex: none; }
+  .savebar span { flex: 1; color: var(--pink-text); font-size: 12.5px; }
+  .arow { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr) 92px 40px 74px 150px auto; align-items: center; gap: 0 8px;
+          min-height: 42px; padding: 4px 5px 4px 4px; margin-bottom: 4px; border-radius: 6px; background: var(--panel); }
+  .arow.head { min-height: 0; background: none; color: var(--sub); font-size: 11px; padding-top: 0; padding-bottom: 0; }
+  .arow.above::before, .arow.below::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+  .arow.above::before { top: -4px; } .arow.below::after { bottom: -4px; }
+  .arow.dragging { opacity: .45; }
+  .grip { cursor: ns-resize; color: var(--pink-text); text-align: center; font-size: 16px; line-height: 34px; touch-action: none; user-select: none; }
+  .grip.off { opacity: .18; cursor: default; }
+  .aname b { display: block; font-weight: 400; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .aname div { display: flex; flex-wrap: wrap; gap: 2px 4px; }
+  .r { text-align: right; } .c { color: var(--sub); font-size: 12px; }
+  .st { font-size: 12px; } .st small { display: block; color: var(--sub); font-size: 10.5px; }
+  .st.regular b { color: var(--ok); } .st.limited b { color: var(--pink-text); } .st.stopped b { color: var(--sub); } .st b { font-weight: 400; }
+  .abtns { display: flex; gap: 4px; justify-content: flex-end; }
+  .abtns .btn { min-height: 28px; padding: 0 9px; font-size: 12px; }
+  .abtns .btn.e { border-color: var(--purple); color: var(--purple-text); }
+  .abtns .btn.t { border-color: var(--pink); color: var(--pink-text); min-width: 68px; }
+
+  /* ===== ダイアログ・通知 ===== */
+  .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .78); display: flex; align-items: center; justify-content: center; padding: 14px; z-index: 20; }
+  .dialog { width: 100%; max-width: 340px; max-height: calc(100dvh - 28px); overflow-y: auto; padding: 16px 18px 18px; border-radius: 10px; background: var(--panel);
+            border: 1px solid transparent; background-image: linear-gradient(var(--panel), var(--panel)), var(--neon); background-origin: border-box; background-clip: padding-box, border-box; }
+  .dialog.wide { max-width: 560px; }
+  .dialog h3 { margin: 0; font-size: 16px; }
+  .dialog h3::after { content: ""; display: block; height: 2px; margin: 8px 0 12px; border-radius: 2px; background: var(--neon); }
+  .dialog p { margin: 0 0 4px; color: var(--sub); }
+  .drow { display: flex; gap: 8px; margin-top: 16px; }
+  .drow .btn { flex: 1; min-height: 40px; }
+  .qhead { display: flex; align-items: flex-end; gap: 8px; } .qhead b { flex: 1; font-weight: 400; } .qhead small { color: var(--sub); font-size: 11.5px; }
+  .qinput { height: 50px !important; margin-top: 8px; text-align: center; font-size: 24px; font-weight: 600; border-color: var(--pink) !important; }
+  .msg { min-height: 17px; margin: 3px 0; font-size: 11.5px; color: var(--pink-text); text-align: center; }
+  .qbtns { display: flex; gap: 6px; } .qbtns .btn { flex: 1; min-height: 36px; padding: 0; } .qbtns .btn.max { flex: 1.4; }
+  .form { display: grid; grid-template-columns: 1fr 1.15fr; gap: 0 20px; }
+  .form label.f { display: block; color: var(--sub); font-size: 11.5px; margin-bottom: 3px; } .form label.f i { color: var(--pink); font-style: normal; }
+  .ferr { min-height: 16px; margin: 1px 0 3px; color: var(--error); font-size: 11px; }
+  .radio { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; cursor: pointer; font-size: 12.5px; }
+  .radio input, .switch input { accent-color: var(--pink); width: 17px; height: 17px; margin: 0; }
+  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 12.5px; }
+  .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+  .fnote { color: var(--sub); font-size: 10.5px; margin-top: 2px; }
+  .fright { display: flex; flex-direction: column; } .fright .drow { margin-top: auto; padding-top: 14px; }
+
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 30; max-width: calc(100vw - 24px); padding: 9px 16px; border-radius: 8px; text-align: center;
+           background: rgba(22, 16, 26, .96); border: 1px solid var(--pink); pointer-events: none; opacity: 0; transition: opacity .25s; }
+  .toast.show { opacity: 1; transition: opacity .1s; }
+  .toast b { display: block; font-size: 14px; } .toast small { display: block; color: var(--sub); font-size: 12px; }
+
+  ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: #3c3c52; border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: var(--pink); }
+
+  /* ===== スマホ（幅がせまいとき） ===== */
+  @media (max-width: 760px) {
+    body { font-size: 15px; }
+    .top { padding: 8px 10px 4px; gap: 6px; }
+    .brand span, .logo i { display: none; } .brand b { font-size: 13px; } .logo { justify-content: center; }
+    .logo strong { font-size: 20px; }
+    .neonline.bottom { display: none; }
+    .screen { padding: 0 8px; }
+    .toolbar { flex-direction: column-reverse; gap: 6px; } .search { width: 100%; }
+    .cats .btn { flex: 1; min-height: 38px; }
+    input[type=text], input[type=search], input[type=password], input[type=date], input[type=tel], select { height: 40px; font-size: 16px; }
+    .list { padding-bottom: 84px; }
+    .prow { flex-wrap: wrap; padding: 8px 8px 8px 10px; gap: 6px 8px; }
+    .pname { flex: 1 1 100%; } .pname b { font-size: 15px; }
+    .pprice { font-size: 15px; } .plimit { flex: 1; width: auto; text-align: left; font-size: 12.5px; }
+    .pbtns { gap: 6px; } .pbtns .btn, .pbtns .btn.max { width: 54px; min-height: 40px; font-size: 14px; }
+
+    /* 注文内容は下からせり出す。ふだんは下のバーに合計だけ出す */
+    .order { position: fixed; left: 0; right: 0; bottom: 0; top: 12dvh; width: auto; z-index: 15; border-radius: 14px 14px 0 0; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+             transform: translateY(105%); transition: transform .22s; }
+    .order.open { transform: none; }
+    .order h2 .btn { display: inline-flex; }
+    .oline .q .btn { min-height: 36px; width: 38px; } .oline .q .btn.num { width: 60px; }
+    .acts .btn { min-height: 56px; font-size: 12.5px; }
+    .sheetback { position: fixed; inset: 0; background: rgba(0, 0, 0, .7); z-index: 14; }
+    .mbar { display: flex; gap: 8px; align-items: stretch; position: fixed; left: 0; right: 0; bottom: 0; z-index: 12; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+            background: rgba(8, 8, 12, .96); border-top: 1px solid #5a2a55; box-shadow: 0 -4px 18px rgba(217, 70, 239, .25); }
+    .mbar .total { margin: 0; flex: 1; padding: 4px 6px; } .mbar .total strong { font-size: 24px; } .mbar .total em { display: none; }
+    .mbar .btn { flex: none; width: 92px; min-height: 56px; flex-direction: column; gap: 0; font-size: 12px; } .mbar .btn b { font-size: 17px; }
+
+    .arow { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 4px 8px; padding: 8px 8px 8px 2px; }
+    .arow.head { display: none; }
+    .grip { grid-row: 1 / span 3; line-height: 1; font-size: 20px; align-self: stretch; display: flex; align-items: center; justify-content: center; }
+    .aname { grid-column: 2 / span 2; } .aname b { font-size: 15px; white-space: normal; }
+    .arow .r.price { grid-column: 2; text-align: left; } .arow .r.lim { display: none; } .arow .c { grid-column: 3; text-align: right; }
+    .st { grid-column: 2 / span 2; } .st small { display: inline; margin-left: 6px; }
+    .abtns { grid-column: 2 / span 2; justify-content: stretch; } .abtns .btn { flex: 1; min-height: 38px; font-size: 13px; }
+    .ahead .btn { min-height: 40px; }
+    .savebar { flex-wrap: wrap; } .savebar span { flex: 1 1 100%; } .savebar .btn { flex: 1; min-height: 40px; }
+    .form { grid-template-columns: 1fr; } .fright .drow { margin-top: 14px; }
+    .toast { bottom: 96px; }
+  }
+  @media (min-width: 761px) { .order h2 .btn, .sheetback { display: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><b>DAVI POS</b><span>KataCity</span></div>
+    <div class="logo"><i></i><div><small>BAR</small><strong>-DAVI-</strong><small>9047</small></div><i></i></div>
+    <button class="btn sq" id="reloadBtn" title="メニューを最新にする" aria-label="メニューを最新にする">↻</button>
+    <button class="btn" id="modeBtn">読み込み中…</button>
+  </header>
+  <div class="offline" id="offline" hidden><span>オフライン：前回取得したメニューを表示しています（メニューの編集はできません）</span><button class="btn" data-act="reload">再読み込み</button></div>
+
+  <!-- 通常注文 -->
+  <main class="screen" id="orderScreen">
+    <div class="toolbar">
+      <div class="cats" id="cats"></div>
+      <div class="search"><input type="search" id="search" placeholder="メニュー検索..." autocomplete="off"></div>
+    </div>
+    <div class="cols">
+      <div class="list" id="products"></div>
+      <div class="sheetback" id="sheetBack" hidden></div>
+      <aside class="order" id="order">
+        <h2><span>注文内容</span><button class="btn" data-act="sheet-close">とじる ▼</button></h2>
+        <div class="lines" id="lines"></div>
+        <button class="total" data-act="copy-total" title="押すと金額の数字だけをコピーします">
+          <small>合計金額</small><strong class="totalText">¥0</strong><em>⧉ クリックで金額をコピー（数字のみ）</em>
+        </button>
+        <div class="acts">
+          <button class="btn p1" data-act="clear"><i>🗑</i>注文クリア</button>
+          <button class="btn p10" data-act="copy-slip"><i>⧉</i>注文票をコピー</button>
+          <button class="btn solid" data-act="complete"><i>✓</i>注文完了</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- メニュー管理 -->
+  <main class="screen" id="adminScreen" hidden>
+    <div class="ahead"><h2>メニュー管理</h2><button class="btn solid" data-act="a-new">＋ 新しいメニューを追加</button></div>
+    <div class="toolbar">
+      <div class="cats" id="tabs"></div>
+      <div class="search"><input type="search" id="adminSearch" placeholder="メニュー検索..." autocomplete="off"></div>
+    </div>
+    <div class="hint" id="reorderHint" hidden>並び順を変えるには「すべて」を選び、検索を空にしてください</div>
+    <div class="savebar" id="saveBar" hidden><span>並び順を変えました。まだ保存されていません。</span>
+      <button class="btn" data-act="a-order-discard">元に戻す</button><button class="btn solid" data-act="a-order-save">並び順を保存する</button></div>
+    <div class="arow head"><span></span><span>メニュー名</span><span class="r">価格</span><span class="r">上限</span><span>カテゴリ</span><span>販売期間 / 状態</span><span style="text-align:center">操作</span></div>
+    <div class="list" id="adminList"></div>
+  </main>
+
+  <div class="neonline bottom"></div>
+</div>
+
+<!-- スマホ用：いつも下に出ている合計バー -->
+<div class="mbar" id="mbar">
+  <button class="total" data-act="copy-total"><small>合計金額（押すとコピー）</small><strong class="totalText">¥0</strong></button>
+  <button class="btn p10" data-act="sheet-open"><b id="mcount">0</b>注文を見る ▲</button>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="dialog" id="dialog"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ====== 設定 ======
+const API = {
+  url: 'https://script.google.com/macros/s/AKfycbxRNX3BEce_WfSSOcOT03AjgTk_FF0al7bOG8hdrfxlulW6QqOl71o8N0Vu8a8uI7o9/exec',
+  key: '467e8da33aa64e1aae49f2d15e7c7900',
+  timeoutMs: 30000,
+};
+const CATEGORY_ORDER = ['FOOD', 'DRINK', 'OTHER'];
+// 注文票（Discord 販売報告）の書式。{lines} {total} {totalRaw} ／ 行は {name} {qty} {price} {subtotal}
+const SLIP = { template: '【販売報告】\n{lines}\n\n合計：{total}', line: '{name} ×{qty}' };
+const CACHE_KEY = 'davipos.menu.v1';
+// 追加効果の色。先に書いたものを優先（アーマーリジェネ を アーマー より前に）
+const EFFECT_COLORS = [['アーマーリジェネ', '#5EEAD4'], ['アーマー', '#60A5FA'], ['HP', '#FF6B81'], ['止血', '#FF4D6A'], ['スタミナ', '#FACC15'],
+  ['ストレス', '#C084FC'], ['空腹', '#FB923C'], ['水分', '#38BDF8'], ['足速', '#4ADE80'], ['泳ぎ', '#2DD4BF']];
+
+// ====== 状態 ======
+let products = [];                 // サーバーの形のまま（削除済みも含む）
+const order = [];                  // { id, name, price, max, qty }
+const st = { cat: null, search: '', admin: false, loading: true, offline: false,
+  adminRequired: true,             // 「不要」と分かるまでは必要として扱う
+  adminPassword: null, unlocked: false, tab: 'all', adminSearch: '', pendingOrder: null };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const yen = n => '¥' + Number(n).toLocaleString('en-US');
+const todayTokyo = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const norm = s => String(s || '').normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+const matches = (p, q) => !q.trim() || norm(p.name + ' ' + (p.effects || '')).includes(norm(q.trim()));
+
+function splitEffects(text) { return String(text || '').split(/[\/／\n\r、,，]/).map(s => s.trim()).filter(Boolean); }
+function chips(text) {
+  return splitEffects(text).map(t => {
+    const hit = EFFECT_COLORS.find(([k]) => t.toUpperCase().startsWith(k.toUpperCase()));
+    const c = hit ? hit[1] : '#C9C9D6';
+    return `<span class="chip" style="color:${c};border-color:${c}78;background:${c}26">${esc(t)}</span>`;
+  }).join('');
+}
+const isActive = p => p.status !== 'ARCHIVED';
+const isLimited = p => p.saleType === 'LIMITED';
+function isOrderable(p, today) {
+  if (!p.isOnSale || !isActive(p)) return false;
+  return !isLimited(p) || (!!p.saleStart && !!p.saleEnd && p.saleStart <= today && today <= p.saleEnd);
+}
+const sorted = list => [...list].sort((a, b) => a.sortOrder - b.sortOrder);
+
+// ====== 通知・ダイアログ ======
+let toastTimer;
+function toast(message, detail) {
+  $('toast').innerHTML = `<b>${esc(message)}</b>${detail ? `<small>${esc(detail)}</small>` : ''}`;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2200);
+}
+let dialogCancel = null;
+function openDialog(html, { wide = false, onCancel = null } = {}) {
+  $('dialog').className = 'dialog' + (wide ? ' wide' : '');
+  $('dialog').innerHTML = html; $('overlay').hidden = false; dialogCancel = onCancel;
+  return $('dialog');
+}
+function closeDialog() { $('overlay').hidden = true; $('dialog').innerHTML = ''; dialogCancel = null; }
+function confirmDialog(title, message, okLabel, onOk) {
+  const d = openDialog(`<h3>${esc(title)}</h3><p>${esc(message)}</p>
+    <div class="drow"><button class="btn" data-d="cancel">戻る</button><button class="btn solid" data-d="ok">${esc(okLabel)}</button></div>`);
+  d.querySelector('[data-d=ok]').onclick = () => { closeDialog(); onOk(); };
+  d.querySelector('[data-d=cancel]').onclick = closeDialog;
+  d.querySelector('[data-d=cancel]').focus();
+}
+async function copyText(text) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch (e) { /* 下の方法で試す */ }
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(ta);
+  ta.focus(); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } ta.remove(); return ok;
+}
+
+// ====== 通信 ======
+async function request(url, init) {
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), API.timeoutMs);
+  try {
+    const res = await fetch(url, { redirect: 'follow', signal: ctl.signal, ...init });
+    const json = await res.json();
+    if (!json.ok) { const e = new Error(json.error || 'UNKNOWN'); e.code = json.error; throw e; }
+    return json;
+  } finally { clearTimeout(timer); }
+}
+const apiList = () => request(`${API.url}?action=list&key=${encodeURIComponent(API.key)}`);
+// Content-Type を text/plain にして、ブラウザの事前確認（プリフライト）を発生させない
+const apiPost = (body, password = st.adminPassword) => request(API.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+  body: JSON.stringify({ key: API.key, adminPassword: password, ...body }) });
+
+function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify(products)); } catch (e) { /* 保存できなくても注文は続けられる */ } }
+function readCache() { try { const v = JSON.parse(localStorage.getItem(CACHE_KEY)); return Array.isArray(v) ? v : null; } catch (e) { return null; } }
+
+// メニューを読む。スクリプトが動くのは「ページを開いたとき・編集したとき・更新ボタン」だけ
+async function loadMenu(manual) {
+  if (st.loading && manual) return;
+  st.loading = true; renderChrome();
+  if (!products.length) { const cached = readCache(); if (cached) { products = cached; render(); } }
+  try {
+    const res = await apiList();
+    products = res.products || []; st.adminRequired = !!res.adminRequired; st.offline = false; saveCache();
+    if (manual) toast('✓ 最新のメニューを読み込みました');
+  } catch (e) {
+    st.offline = products.length > 0;
+    if (!products.length) toast('メニューを読み込めませんでした', '通信環境を確認して、もう一度お試しください');
+  } finally { st.loading = false; render(); }
+}
+
+// ====== 注文 ======
+const total = () => order.reduce((sum, l) => sum + l.price * l.qty, 0);
+function setQty(line, requested) {
+  const qty = Math.max(0, Math.min(requested, line.max));
+  if (qty === 0) { const i = order.indexOf(line); if (i >= 0) order.splice(i, 1); } else { line.qty = qty; if (!order.includes(line)) order.push(line); }
+  if (requested > line.max) toast(`販売上限${line.max}個に設定しました`);
+  renderOrder();
+}
+const lineFor = p => order.find(l => l.id === p.id) || { id: p.id, name: p.name, price: p.price, max: p.maxPerOrder, qty: 0 };
+function slipText() {
+  const lines = order.map(l => SLIP.line.replace('{name}', l.name).replace('{qty}', l.qty).replace('{price}', yen(l.price)).replace('{subtotal}', yen(l.price * l.qty)));
+  return SLIP.template.replace('{lines}', lines.join('\n')).replace('{totalRaw}', String(total())).replace('{total}', yen(total()));
+}
+function quantityDialog(line) {
+  const d = openDialog(`<h3>数量を指定</h3>
+    <div class="qhead"><b>${esc(line.name)}</b><small>販売上限：${line.max}個</small></div>
+    <input class="qinput" id="qin" type="tel" inputmode="numeric" maxlength="6" value="${line.qty}">
+    <div class="msg" id="qmsg"></div>
+    <div class="qbtns"><button class="btn p1" data-q="1">+1</button><button class="btn p10" data-q="10">+10</button><button class="btn max" data-q="max">上限(${line.max})</button></div>
+    <div class="drow"><button class="btn" data-d="cancel">キャンセル</button><button class="btn solid" data-d="ok">設定する</button></div>`);
+  const input = d.querySelector('#qin'), msg = d.querySelector('#qmsg'), ok = d.querySelector('[data-d=ok]');
+  const value = () => parseInt(input.value, 10) || 0;
+  const apply = v => {   // 上限を超える数は入れさせない
+    if (v > line.max) { input.value = line.max; msg.textContent = `販売上限は${line.max}個です`; }
+    else { input.value = v > 0 || input.value !== '' ? String(v) : ''; msg.textContent = input.value !== '' && v < 1 ? '1個以上を入力してください' : ''; }
+    ok.disabled = value() < 1;
+  };
+  input.oninput = () => { const digits = input.value.replace(/\D/g, ''); if (digits === '') { input.value = ''; msg.textContent = ''; ok.disabled = true; } else apply(parseInt(digits, 10)); };
+  d.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { apply(b.dataset.q === 'max' ? line.max : value() + Number(b.dataset.q)); input.focus(); });
+  const confirm = () => { if (value() < 1) return; const v = value(); closeDialog(); setQty(line, v); };
+  ok.onclick = confirm; d.querySelector('[data-d=cancel]').onclick = closeDialog;
+  input.onkeydown = e => { if (e.key === 'Enter') confirm(); };
+  input.focus(); input.select();
+}
+
+// ====== 画面を描く ======
+function renderChrome() {
+  $('modeBtn').textContent = st.admin ? '注文に戻る' : st.loading ? '読み込み中…' : 'メニュー管理';
+  $('modeBtn').disabled = st.loading && !st.admin;   // 読み込みが終わるまでメニュー管理は開けない
+  $('modeBtn').style.borderColor = st.admin ? 'var(--purple)' : ''; $('modeBtn').style.color = st.admin ? 'var(--purple-text)' : '';
+  $('reloadBtn').disabled = st.loading;
+  $('offline').hidden = !st.offline;
+  $('orderScreen').hidden = st.admin; $('adminScreen').hidden = !st.admin;
+  $('mbar').style.display = st.admin ? 'none' : '';
+}
+function renderProducts() {
+  const today = todayTokyo();
+  const visible = sorted(products).filter(p => isOrderable(p, today));
+  const cats = [...new Set(visible.map(p => p.category))].sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b); });
+  if (st.cat && !cats.includes(st.cat)) st.cat = null;
+  $('cats').innerHTML = [[null, 'すべて'], ...cats.map(c => [c, c])].map(([v, label]) =>
+    `<button class="btn ${st.cat === v ? 'sel' : ''}" data-act="cat" data-v="${esc(v ?? '')}">${esc(label)}</button>`).join('');
+  const shown = visible.filter(p => (!st.cat || p.category === st.cat) && matches(p, st.search));
+  $('products').innerHTML = shown.length ? shown.map(p => `<div class="prow">
+      <div class="pname"><b>${esc(p.name)}</b>${isLimited(p) ? '<span class="badge">期間限定</span>' : ''}${chips(p.effects)}</div>
+      <div class="pprice">${yen(p.price)}</div><div class="plimit">上限 ${p.maxPerOrder}</div>
+      <div class="pbtns"><button class="btn p1" data-act="add" data-n="1" data-id="${esc(p.id)}">+1</button><button class="btn p10" data-act="add" data-n="10" data-id="${esc(p.id)}">+10</button><button class="btn max" data-act="add" data-n="max" data-id="${esc(p.id)}">上限</button></div>
+    </div>`).join('') : '<div class="empty">該当するメニューがありません</div>';
+}
+function renderOrder() {
+  $('lines').innerHTML = order.length ? order.map((l, i) => `<div class="oline">
+      <div class="n"><span>${esc(l.name)}</span><button class="x" data-act="rm" data-i="${i}" title="この商品を注文から外す" aria-label="注文から外す">✕</button></div>
+      <div class="q"><small>${yen(l.price)} ×</small><button class="btn" data-act="dec" data-i="${i}" aria-label="1つ減らす">−</button>
+        <button class="btn p1 num" data-act="qty" data-i="${i}" title="押すと数量を入力できます">${l.qty}</button>
+        <button class="btn" data-act="inc" data-i="${i}" aria-label="1つ増やす">+</button><b>${yen(l.price * l.qty)}</b></div>
+    </div>`).join('') : '<div class="empty">メニューから<br>商品を選んでください</div>';
+  document.querySelectorAll('.totalText').forEach(e => e.textContent = yen(total()));
+  document.querySelectorAll('[data-act=copy-total],[data-act=clear],[data-act=copy-slip],[data-act=complete]').forEach(b => b.disabled = !order.length);
+  $('mcount').textContent = order.reduce((n, l) => n + l.qty, 0) + '点';
+  if (!order.length) setSheet(false);
+}
+function setSheet(open) { $('order').classList.toggle('open', open); $('sheetBack').hidden = !open; }
+
+const tabOf = p => !p.isOnSale ? 'stopped' : isLimited(p) ? 'limited' : 'regular';
+const canReorder = () => st.tab === 'all' && !st.adminSearch.trim();
+function adminItems() {
+  let items = sorted(products.filter(isActive));
+  if (st.pendingOrder) { const pos = id => { const i = st.pendingOrder.indexOf(id); return i < 0 ? 1e9 : i; }; items.sort((a, b) => pos(a.id) - pos(b.id)); }
+  return items;
+}
+function renderAdmin() {
+  const all = adminItems(), today = todayTokyo();
+  const tabs = [['all', 'すべて'], ['regular', 'レギュラー'], ['limited', '期間限定'], ['stopped', '販売停止']];
+  $('tabs').innerHTML = tabs.map(([k, label]) => `<button class="btn ${st.tab === k ? 'sel' : ''}" data-act="a-tab" data-v="${k}">${label} (${k === 'all' ? all.length : all.filter(p => tabOf(p) === k).length})</button>`).join('');
+  const rows = all.filter(p => (st.tab === 'all' || tabOf(p) === st.tab) && matches(p, st.adminSearch));
+  const md = d => d.slice(5).replace('-', '/');
+  $('adminList').innerHTML = rows.length ? rows.map(p => {
+    const t = tabOf(p), label = { regular: 'レギュラー', limited: '期間限定', stopped: '販売停止' }[t];
+    const detail = isLimited(p) && p.saleStart && p.saleEnd ? `${md(p.saleStart)} ～ ${md(p.saleEnd)}・${today < p.saleStart ? '販売前' : today > p.saleEnd ? '終了' : '販売中'}` : '';
+    return `<div class="arow" data-id="${esc(p.id)}">
+      <div class="grip ${canReorder() ? '' : 'off'}" title="つかんで上下に動かすと、並び順を変えられます">＝</div>
+      <div class="aname"><b>${esc(p.name)}</b><div>${chips(p.effects)}</div></div>
+      <div class="r price">${yen(p.price)}</div><div class="r lim">${p.maxPerOrder}</div><div class="c">${esc(p.category)}<span class="mlim"></span></div>
+      <div class="st ${t}"><b>● ${label}</b>${detail ? `<small>${detail}</small>` : ''}</div>
+      <div class="abtns"><button class="btn e" data-act="a-edit" data-id="${esc(p.id)}">編集</button><button class="btn" data-act="a-dup" data-id="${esc(p.id)}">複製</button>
+        <button class="btn t" data-act="a-toggle" data-id="${esc(p.id)}">${p.isOnSale ? '販売停止' : '販売再開'}</button><button class="btn danger" data-act="a-del" data-id="${esc(p.id)}">削除</button></div>
+    </div>`; }).join('') : '<div class="empty">該当するメニューがありません</div>';
+  $('saveBar').hidden = !st.pendingOrder; $('reorderHint').hidden = canReorder();
+}
+function render() { renderChrome(); renderProducts(); renderOrder(); if (st.admin) renderAdmin(); }
+
+// ====== メニュー管理：保存まわり ======
+function replaceProduct(p) { const i = products.findIndex(x => x.id === p.id); if (i >= 0) products[i] = p; else products.push(p); saveCache(); render(); }
+async function run(action, okMessage) {
+  try { const res = await action(); toast(okMessage); return res; }
+  catch (e) {
+    if (e.code === 'ADMIN_REQUIRED') { st.unlocked = false; st.adminPassword = null; toast('合言葉が変わっています', '「注文に戻る」を押してから、もう一度メニュー管理を開いてください'); }
+    else toast('保存できませんでした', '通信環境を確認して、もう一度お試しください');
+    return null;
+  }
+}
+function passwordDialog(onSuccess) {
+  const d = openDialog(`<h3>合言葉を入力</h3><p>メニュー管理は、合言葉を知っている人だけが開けます。</p>
+    <input type="password" id="pw" maxlength="64" autocomplete="off" style="height:42px;margin-top:8px;border-color:var(--pink)">
+    <div class="ferr" id="pwerr"></div>
+    <div class="drow" style="margin-top:6px"><button class="btn" data-d="cancel">キャンセル</button><button class="btn solid" data-d="ok">開く</button></div>`);
+  const input = d.querySelector('#pw'), err = d.querySelector('#pwerr'), ok = d.querySelector('[data-d=ok]');
+  let busy = false;
+  const submit = async () => {
+    if (busy) return;
+    if (!input.value) { err.textContent = '合言葉を入力してください'; return; }
+    busy = true; ok.textContent = '確認中…'; err.textContent = '';
+    try { await apiPost({ action: 'auth' }, input.value); st.adminPassword = input.value; st.unlocked = true; closeDialog(); onSuccess(); }
+    catch (e) { err.textContent = e.code === 'ADMIN_REQUIRED' ? '合言葉がちがいます' : '確認できませんでした。通信環境を確認してください'; busy = false; ok.textContent = '開く'; input.select(); }
+  };
+  ok.onclick = submit; d.querySelector('[data-d=cancel]').onclick = closeDialog; input.onkeydown = e => { if (e.key === 'Enter') submit(); };
+  input.focus();
+}
+function toggleMode() {
+  if (st.admin && st.pendingOrder) {
+    confirmDialog('並び順が保存されていません', 'このまま戻ると、変えた並び順は元に戻ります。', '保存せずに戻る', () => { st.pendingOrder = null; st.admin = false; render(); });
+    return;
+  }
+  if (st.admin) { st.admin = false; render(); return; }
+  if (st.loading) return;
+  const enter = () => { st.admin = true; setSheet(false); render(); };
+  if (st.adminRequired && !st.unlocked) passwordDialog(enter); else enter();
+}
+function editDialog(title, saveLabel, original, prefill) {
+  const p = prefill || {}, limited = p.saleType === 'LIMITED';
+  const cats = [...new Set([...CATEGORY_ORDER, ...products.filter(isActive).map(x => x.category)])].filter(Boolean);
+  const d = openDialog(`<h3>${esc(title)}</h3><div class="form">
+    <div>
+      <label class="f">メニュー名 <i>*</i></label><input type="text" id="f-name" maxlength="40" value="${esc(p.name || '')}"><div class="ferr" id="e-name"></div>
+      <label class="f">価格 <i>*</i></label><input type="tel" inputmode="numeric" id="f-price" maxlength="12" value="${esc(p.price ?? '')}"><div class="ferr" id="e-price"></div>
+      <label class="f">1回の購入上限 <i>*</i></label><input type="tel" inputmode="numeric" id="f-max" maxlength="6" value="${esc(p.maxPerOrder ?? '')}"><div class="ferr" id="e-max"></div>
+      <label class="f">カテゴリ <i>*</i></label><select id="f-cat"><option value=""></option>${cats.map(c => `<option ${c === p.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select><div class="ferr" id="e-cat"></div>
+      <label class="f">追加効果（「/」で区切る）</label><input type="text" id="f-fx" maxlength="80" value="${esc(p.effects || '')}"><div class="fnote">例：HP 小+ / 止血</div>
+    </div>
+    <div class="fright">
+      <label class="f">販売タイプ <i>*</i></label>
+      <label class="radio"><input type="radio" name="f-type" value="REGULAR" ${limited ? '' : 'checked'}>レギュラーメニュー（常時販売）</label>
+      <label class="radio"><input type="radio" name="f-type" value="LIMITED" ${limited ? 'checked' : ''}>期間限定メニュー（期間を指定）</label>
+      <div class="dates" id="f-dates" ${limited ? '' : 'hidden'}>
+        <div><label class="f">販売開始日 <i>*</i></label><input type="date" id="f-start" value="${esc(p.saleStart || '')}"><div class="ferr" id="e-start"></div></div>
+        <div><label class="f">販売終了日 <i>*</i></label><input type="date" id="f-end" value="${esc(p.saleEnd || '')}"><div class="ferr" id="e-end"></div></div>
+      </div>
+      <label class="f" style="margin-top:8px">販売状態</label>
+      <label class="switch"><input type="checkbox" id="f-on" ${p.isOnSale === false ? '' : 'checked'}><span id="f-onText"></span></label>
+      <div class="drow"><button class="btn" data-d="cancel">キャンセル</button><button class="btn solid" data-d="ok">${esc(saveLabel)}</button></div>
+    </div></div>`, { wide: true });
+  const q = s => d.querySelector(s), isLim = () => q('input[name=f-type]:checked').value === 'LIMITED';
+  const onText = () => q('#f-onText').textContent = q('#f-on').checked ? '販売する（レジに表示）' : '販売しない（レジに出さない）';
+  onText(); q('#f-on').onchange = onText;
+  d.querySelectorAll('input[name=f-type]').forEach(r => r.onchange = () => q('#f-dates').hidden = !isLim());
+  ['price', 'max'].forEach(k => q('#f-' + k).oninput = e => e.target.value = e.target.value.replace(/\D/g, ''));
+  const setErr = (k, input, text) => { q('#e-' + k).textContent = text; input.classList.toggle('err', !!text); return !text; };
+  let busy = false;
+  q('[data-d=cancel]').onclick = closeDialog;
+  q('[data-d=ok]').onclick = async () => {
+    if (busy) return;
+    const name = q('#f-name').value.trim(), priceText = q('#f-price').value.trim(), maxText = q('#f-max').value.trim(), cat = q('#f-cat').value;
+    const price = Number(priceText), max = Number(maxText), lim = isLim(), start = q('#f-start').value, end = q('#f-end').value;
+    let ok = setErr('name', q('#f-name'), name ? '' : 'メニュー名を入力してください');
+    ok = setErr('price', q('#f-price'), !priceText ? '価格を入力してください' : price >= 1 ? '' : '価格は1以上の数字で入力してください') && ok;
+    ok = setErr('max', q('#f-max'), !maxText ? '購入上限を入力してください' : max >= 1 ? '' : '購入上限は1以上の数字で入力してください') && ok;
+    ok = setErr('cat', q('#f-cat'), cat ? '' : 'カテゴリを選んでください') && ok;
+    if (lim) {
+      ok = setErr('start', q('#f-start'), start ? '' : '販売開始日を選んでください') && ok;
+      ok = setErr('end', q('#f-end'), !end ? '販売終了日を選んでください' : start && end < start ? '開始日より前になっています' : '') && ok;
+    }
+    if (!ok) return;
+    const product = { ...(original || {}), name, price, maxPerOrder: max, category: cat, effects: splitEffects(q('#f-fx').value).join(' / '),
+      saleType: lim ? 'LIMITED' : 'REGULAR', saleStart: lim ? start : null, saleEnd: lim ? end : null, isOnSale: q('#f-on').checked };
+    busy = true;
+    const res = await run(() => apiPost({ action: original ? 'update' : 'add', product }), '✓ メニューを保存しました');
+    busy = false;
+    if (res) { closeDialog(); replaceProduct(res.product); }
+  };
+  q('#f-name').focus();
+}
+
+// ====== 並び順：左はしの「＝」をつかんで動かす（マウスでも指でも） ======
+let drag = null;
+function clearMarks() { document.querySelectorAll('.arow.above,.arow.below').forEach(r => r.classList.remove('above', 'below')); }
+$('adminList').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.grip'); if (!grip || !canReorder()) return;
+  const row = grip.closest('.arow'); drag = { id: row.dataset.id, row, target: null, after: false };
+  row.classList.add('dragging'); grip.setPointerCapture(e.pointerId); e.preventDefault();
+});
+$('adminList').addEventListener('pointermove', e => {
+  if (!drag) return;
+  const list = $('adminList'), box = list.getBoundingClientRect();
+  if (e.clientY < box.top + 40) list.scrollTop -= 12; else if (e.clientY > box.bottom - 40) list.scrollTop += 12;
+  const el = document.elementFromPoint(Math.min(Math.max(e.clientX, box.left + 40), box.right - 40), e.clientY);
+  const row = el && el.closest ? el.closest('#adminList .arow') : null;
+  clearMarks(); drag.target = null;
+  if (row && row !== drag.row) { const r = row.getBoundingClientRect(); drag.after = e.clientY > r.top + r.height / 2; drag.target = row.dataset.id; row.classList.add(drag.after ? 'below' : 'above'); }
+});
+function endDrag() {
+  if (!drag) return; const d = drag; drag = null; clearMarks(); d.row.classList.remove('dragging');
+  if (!d.target) return;
+  const ids = adminItems().map(p => p.id), from = ids.indexOf(d.id); ids.splice(from, 1);
+  ids.splice(ids.indexOf(d.target) + (d.after ? 1 : 0), 0, d.id);
+  st.pendingOrder = ids; renderAdmin();   // ここでは画面の並びを変えるだけ。保存は「並び順を保存する」の 1 回
+}
+$('adminList').addEventListener('pointerup', endDrag); $('adminList').addEventListener('pointercancel', endDrag);
+
+// ====== 操作 ======
+const byId = id => products.find(p => p.id === id);
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const act = b.dataset.act, line = order[Number(b.dataset.i)], p = b.dataset.id ? byId(b.dataset.id) : null;
+  switch (act) {
+    case 'reload': loadMenu(true); break;
+    case 'cat': st.cat = b.dataset.v || null; renderProducts(); break;
+    case 'add': if (p) { const l = lineFor(p); setQty(l, b.dataset.n === 'max' ? l.max : l.qty + Number(b.dataset.n)); } break;
+    case 'inc': setQty(line, line.qty + 1); break;
+    case 'dec': setQty(line, line.qty - 1); break;
+    case 'rm': setQty(line, 0); break;
+    case 'qty': quantityDialog(line); break;
+    case 'sheet-open': setSheet(true); break;
+    case 'sheet-close': setSheet(false); break;
+    case 'copy-total':
+      if (await copyText(String(total()))) { toast(`✓ ${yen(total())} をコピーしました`); document.querySelectorAll('.total').forEach(t => { t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }); }
+      else toast('コピーできませんでした', 'もう一度押してください');
+      break;
+    case 'copy-slip':
+      if (await copyText(slipText())) toast('✓ 注文票をコピーしました', 'Discordの販売報告へ貼り付けてください'); else toast('コピーできませんでした', 'もう一度押してください');
+      break;
+    case 'complete': confirmDialog('注文を完了しますか？', '現在の注文内容がクリアされます。', '完了する', () => { order.length = 0; renderOrder(); toast('✓ 注文を完了しました'); }); break;
+    case 'clear': confirmDialog('注文をクリアしますか？', '現在の注文内容がすべて削除されます。', 'クリアする', () => { order.length = 0; renderOrder(); toast('✓ 注文をクリアしました'); }); break;
+    case 'a-tab': st.tab = b.dataset.v; renderAdmin(); break;
+    case 'a-new': editDialog('新しいメニューを追加', '保存する', null, null); break;
+    case 'a-edit': if (p) editDialog('メニューを編集', '更新する', p, p); break;
+    case 'a-dup': if (p) editDialog('メニューを複製', '保存する', null, p); break;
+    case 'a-toggle': if (p) { const on = !p.isOnSale; const res = await run(() => apiPost({ action: 'setOnSale', id: p.id, isOnSale: on }), on ? '✓ 販売を再開しました' : '✓ 販売停止にしました'); if (res) replaceProduct(res.product); } break;
+    case 'a-del': if (p) confirmDialog(`「${p.name}」を削除しますか？`, '削除すると、レジにもこの一覧にも表示されなくなります。', '削除する', async () => {
+      const res = await run(() => apiPost({ action: 'archive', id: p.id }), '✓ 削除しました'); if (res) replaceProduct(res.product); }); break;
+    case 'a-order-discard': st.pendingOrder = null; renderAdmin(); break;
+    case 'a-order-save': {
+      const ids = st.pendingOrder; if (!ids) break; b.disabled = true;
+      const res = await run(() => apiPost({ action: 'reorder', ids }), '✓ 並び順を保存しました');
+      if (res) { ids.forEach((id, i) => { const x = byId(id); if (x) x.sortOrder = i + 1; }); st.pendingOrder = null; saveCache(); }
+      render(); break;
+    }
+  }
+});
+$('modeBtn').onclick = toggleMode;
+$('reloadBtn').onclick = () => loadMenu(true);
+$('search').oninput = e => { st.search = e.target.value; renderProducts(); };
+$('adminSearch').oninput = e => { st.adminSearch = e.target.value; renderAdmin(); };
+$('sheetBack').onclick = () => setSheet(false);
+$('overlay').addEventListener('pointerdown', e => { if (e.target === $('overlay') && dialogCancel) dialogCancel(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('overlay').hidden) closeDialog(); });
+// 注文の途中でページを閉じようとしたら、ブラウザの確認を出す
+window.addEventListener('beforeunload', e => { if (order.length) { e.preventDefault(); e.returnValue = ''; } });
+// 期間限定メニューは、日付が変わったら自動で出し入れする（通信はしない）
+setInterval(() => { if (!st.admin && $('overlay').hidden) renderProducts(); }, 30000);
+
+render();
+loadMenu(false);
+</script>
+</body>
+</html>
