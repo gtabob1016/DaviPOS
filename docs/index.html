@@ -115,7 +115,7 @@
   .acts .btn { flex: 1; min-height: 50px; padding: 0 2px; font-size: 11.5px; flex-direction: column; gap: 2px; }
   .acts .btn i { font-style: normal; font-size: 15px; line-height: 1; }
 
-  .mbar { display: none; }
+  .mbar, .mlim { display: none; }
 
   /* ===== メニュー管理 ===== */
   .ahead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex: none; }
@@ -207,6 +207,7 @@
     .arow.head { display: none; }
     .grip { grid-row: 1 / span 3; line-height: 1; font-size: 20px; align-self: stretch; display: flex; align-items: center; justify-content: center; }
     .aname { grid-column: 2 / span 2; } .aname b { font-size: 15px; white-space: normal; }
+    .mlim { display: inline; margin-left: 10px; color: var(--sub); font-size: 12.5px; }
     .arow .r.price { grid-column: 2; text-align: left; } .arow .r.lim { display: none; } .arow .c { grid-column: 3; text-align: right; }
     .st { grid-column: 2 / span 2; } .st small { display: inline; margin-left: 6px; }
     .abtns { grid-column: 2 / span 2; justify-content: stretch; } .abtns .btn { flex: 1; min-height: 38px; font-size: 13px; }
@@ -477,7 +478,7 @@ function renderAdmin() {
     return `<div class="arow" data-id="${esc(p.id)}">
       <div class="grip ${canReorder() ? '' : 'off'}" title="つかんで上下に動かすと、並び順を変えられます">＝</div>
       <div class="aname"><b>${esc(p.name)}</b><div>${chips(p.effects)}</div></div>
-      <div class="r price">${yen(p.price)}</div><div class="r lim">${p.maxPerOrder}</div><div class="c">${esc(p.category)}<span class="mlim"></span></div>
+      <div class="r price">${yen(p.price)}<small class="mlim">上限 ${p.maxPerOrder}</small></div><div class="r lim">${p.maxPerOrder}</div><div class="c">${esc(p.category)}</div>
       <div class="st ${t}"><b>● ${label}</b>${detail ? `<small>${detail}</small>` : ''}</div>
       <div class="abtns"><button class="btn e" data-act="a-edit" data-id="${esc(p.id)}">編集</button><button class="btn" data-act="a-dup" data-id="${esc(p.id)}">複製</button>
         <button class="btn t" data-act="a-toggle" data-id="${esc(p.id)}">${p.isOnSale ? '販売停止' : '販売再開'}</button><button class="btn danger" data-act="a-del" data-id="${esc(p.id)}">削除</button></div>
